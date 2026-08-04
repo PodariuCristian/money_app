@@ -1,5 +1,5 @@
-
 import sys
+import Constants
 from datetime import datetime
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter
@@ -16,86 +16,124 @@ class MainWindow(QMainWindow):
 
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Financial Dashboard")
-        self.resize(1200,700)
+        self.setWindowTitle("MoneyApp")
+        self.resize(1800, 950)
         self._setup_ui()
 
     def _setup_ui(self):
-        cw=QWidget(); self.setCentralWidget(cw)
-        main=QVBoxLayout(cw)
+        central_widget = QWidget();
+        self.setCentralWidget(central_widget)
+        main_layout = QVBoxLayout(central_widget)
 
-        self.combo=QComboBox()
-        years=[str(y) for y in range(self.CURRENT_YEAR-2,self.CURRENT_YEAR+3)]
-        self.combo.addItems(years)
-        self.combo.setCurrentText(str(self.CURRENT_YEAR))
-        main.addWidget(self.combo)
+        # -------------------- Year selection dropdown --------------------
+        self.comboBox = QComboBox()
+        years = [str(y) for y in range(self.CURRENT_YEAR - 2, self.CURRENT_YEAR + 5)]
+        self.comboBox.addItems(years)
+        self.comboBox.setCurrentText(str(self.CURRENT_YEAR))
+        main_layout.addWidget(self.comboBox)
 
-        self.tabs=QTabWidget()
-        main.addWidget(self.tabs,1)
-
+        # -------------------- Main tab widget --------------------
+        self.tabs = QTabWidget()
+        main_layout.addWidget(self.tabs, 1)
         self.init_stats()
+
+        # -------------------- Create other tabs --------------------
         for name in ("Income","Fixed Costs","Spendings"):
             self.tabs.addTab(QWidget(),name)
 
-    def build_summary(self,title,is_monthly=True):
-        box=QGroupBox(title)
-        lay=QVBoxLayout(box)
+    # -------------------- Define Tab in Main Window --------------------
+    def build_summary(self, title, is_monthly=True):
+        groupBox = QGroupBox(title)
+        boxLayout = QVBoxLayout(groupBox)
 
-        sel=QComboBox()
+        # ---------------- Month/Year selection ----------------
+        periodSelection = QComboBox()
         if is_monthly:
-            months=["January","February","March","April","May","June","July","August","September","October","November","December"]
-            sel.addItems(months)
-            sel.setCurrentIndex(datetime.now().month-1)
+            periodSelection.addItems(Constants.months)
+            periodSelection.setCurrentIndex(datetime.now().month-1)
         else:
-            years=[str(y) for y in range(self.CURRENT_YEAR-2,self.CURRENT_YEAR+3)]
-            sel.addItems(years)
-            sel.setCurrentText(str(self.CURRENT_YEAR))
-        lay.addWidget(sel)
+            years=[str(y) for y in range(self.CURRENT_YEAR - 2,self.CURRENT_YEAR + 5)]
+            periodSelection.addItems(years)
+            periodSelection.setCurrentText(str(self.CURRENT_YEAR))
+        boxLayout.addWidget(periodSelection)
 
-        r1=QHBoxLayout()
-        inc=QLineEdit(); out=QLineEdit()
-        inc.setReadOnly(True); out.setReadOnly(True)
-        r1.addWidget(QLabel("Income:")); r1.addWidget(inc)
-        r1.addWidget(QLabel("Outcome:")); r1.addWidget(out)
-        lay.addLayout(r1)
+        # ---------------- Income/Outcome Label ----------------
+        row1=QHBoxLayout()
+        income = QLineEdit()
+        outcome = QLineEdit()
+        income.setReadOnly(True)
+        income.setPlaceholderText("0.00")
+        outcome.setReadOnly(True)
+        outcome.setPlaceholderText("0.00")
+        row1.addWidget(QLabel("Income:"))
+        row1.addWidget(income)
+        row1.addWidget(QLabel("Outcome:"))
+        row1.addWidget(outcome)
+        boxLayout.addLayout(row1)
 
-        r2=QHBoxLayout()
-        pct=QLineEdit(); diff=QLineEdit()
-        pct.setReadOnly(True); diff.setReadOnly(True)
-        r2.addWidget(QLabel("Income/Outcome:")); r2.addWidget(pct)
-        r2.addWidget(QLabel("Previous Month:" if is_monthly else "Previous Year:")); r2.addWidget(diff)
-        lay.addLayout(r2)
+        # ---------------- Percentage / Previous Month row ----------------
+        row2 = QHBoxLayout()
+        percentage = QLineEdit()
+        prevMonth = QLineEdit()
+        percentage.setReadOnly(True)
+        percentage.setPlaceholderText("0.00 %")
+        prevMonth.setReadOnly(True)
+        prevMonth.setPlaceholderText("0.00")
+        row2.addWidget(QLabel("Income/Outcome:"))
+        row2.addWidget(percentage)
+        row2.addWidget(QLabel("Previous Month:" if is_monthly else "Previous Year:"))
+        row2.addWidget(prevMonth)
+        boxLayout.addLayout(row2)
 
-        charts=QHBoxLayout()
+        # ---------------- Charts ----------------
+        charts = QVBoxLayout()
 
-        pie_series=QPieSeries()
-        pie_chart=QChart(); pie_chart.addSeries(pie_series); pie_chart.setTitle("Spending Distribution")
-        pie_view=QChartView(pie_chart); pie_view.setRenderHint(QPainter.Antialiasing)
+        # ---------------- Pie Charts ----------------
+        pie_series = QPieSeries()
+        for i in Constants.categories:
+            pie_series.append(i, 450)
 
-        bar_set=QBarSet("Expenses")
-        bar_series=QBarSeries(); bar_series.append(bar_set)
-        bar_chart=QChart(); bar_chart.addSeries(bar_series); bar_chart.setTitle("Expenses by Category")
-        cats=["Food","Rent","Transport","Utilities","Entertainment","Other"]
-        ax=QBarCategoryAxis(); ax.append(cats)
-        ay=QValueAxis(); ay.setRange(0,100)
-        bar_chart.addAxis(ax,Qt.AlignBottom); bar_chart.addAxis(ay,Qt.AlignLeft)
-        bar_series.attachAxis(ax); bar_series.attachAxis(ay)
-        bar_view=QChartView(bar_chart); bar_view.setRenderHint(QPainter.Antialiasing)
+        pie_chart = QChart()
+        pie_chart.addSeries(pie_series)
+        pie_chart.setTitle("Spending Distribution")
+        pie_chart.legend().setVisible(True)
+        pie_view = QChartView(pie_chart)
+        pie_view.setRenderHint(QPainter.Antialiasing)
 
-        charts.addWidget(pie_view,1)
-        charts.addWidget(bar_view,1)
-        lay.addLayout(charts,1)
-        return box
+        # ---------------- Empty Bar Chart ----------------
+        bar_set = QBarSet("Expenses")
+        bar_series = QBarSeries()
+        bar_series.append(bar_set)
+
+        bar_chart = QChart()
+        bar_chart.addSeries(bar_series)
+        bar_chart.setTitle("Expenses by Category")
+
+        axis_x = QBarCategoryAxis()
+        axis_x.append(Constants.categories)
+        axis_y = QValueAxis()
+        axis_y.setRange(0,1000)
+        bar_chart.addAxis(axis_x,Qt.AlignBottom)
+        bar_chart.addAxis(axis_y,Qt.AlignLeft)
+        bar_series.attachAxis(axis_x)
+        bar_series.attachAxis(axis_y)
+        bar_view = QChartView(bar_chart)
+        bar_view.setRenderHint(QPainter.Antialiasing)
+
+        charts.addWidget(pie_view, 3)
+        charts.addWidget(bar_view, 2)
+        boxLayout.addLayout(charts, 1)
+        return groupBox
 
     def init_stats(self):
-        tab=QWidget()
+        tab = QWidget()
         self.tabs.addTab(tab,"Stats Overview")
-        hl=QHBoxLayout(tab)
-        hl.addWidget(self.build_summary("Monthly Summary",True),1)
-        hl.addWidget(self.build_summary("Yearly Summary",False),1)
+        half = QHBoxLayout(tab)
+        half.addWidget(self.build_summary("Monthly Summary",True),1)
+        half.addWidget(self.build_summary("Yearly Summary",False),1)
 
 if __name__=="__main__":
-    app=QApplication(sys.argv)
-    w=MainWindow()
-    w.show()
+    app = QApplication(sys.argv)
+    window = MainWindow()
+    window.show()
     sys.exit(app.exec())

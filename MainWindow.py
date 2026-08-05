@@ -4,11 +4,16 @@ from datetime import datetime
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtCharts import (
-    QChart,QChartView,QPieSeries,QBarSeries,QBarSet,QBarCategoryAxis,QValueAxis
+    QChart, QChartView, QPieSeries,
+    QBarSeries, QBarSet, QBarCategoryAxis,
+    QValueAxis
 )
 from PySide6.QtWidgets import (
-    QApplication,QMainWindow,QWidget,QVBoxLayout,QHBoxLayout,QTabWidget,
-    QComboBox,QGroupBox,QLabel,QLineEdit
+    QApplication, QMainWindow, QWidget,
+    QVBoxLayout, QHBoxLayout, QTabWidget,
+    QComboBox, QGroupBox, QLabel,
+    QLineEdit, QTableWidget, QTableWidgetItem,
+    QHeaderView
 )
 
 class MainWindow(QMainWindow):
@@ -38,11 +43,14 @@ class MainWindow(QMainWindow):
         self.init_stats()
 
         # -------------------- Create other tabs --------------------
-        for name in ("Income","Fixed Costs","Spendings"):
-            self.tabs.addTab(QWidget(),name)
+        self.build_income_tab()
+
+        self.tabs.addTab(QWidget(), "Fix Spendings")
+        self.tabs.addTab(QWidget(), "Spendings")
+        self.tabs.addTab(QWidget(), "Statistics")
 
     # -------------------- Define Tab in Main Window --------------------
-    def build_summary(self, title, is_monthly=True):
+    def build_overview_tab(self, title, is_monthly = True):
         groupBox = QGroupBox(title)
         boxLayout = QVBoxLayout(groupBox)
 
@@ -126,11 +134,60 @@ class MainWindow(QMainWindow):
         return groupBox
 
     def init_stats(self):
-        tab = QWidget()
-        self.tabs.addTab(tab,"Stats Overview")
-        half = QHBoxLayout(tab)
-        half.addWidget(self.build_summary("Monthly Summary",True),1)
-        half.addWidget(self.build_summary("Yearly Summary",False),1)
+            tab = QWidget()
+            self.tabs.addTab(tab,"Stats Overview")
+            half = QHBoxLayout(tab)
+            half.addWidget(self.build_overview_tab("Monthly Summary",True),1)
+            half.addWidget(self.build_overview_tab("Yearly Summary",False),1)
+
+    def build_income_tab(self):
+        # ---------- Create Income tab ----------
+        self.income_tab = QWidget()
+        self.tabs.addTab(self.income_tab, "Income")
+
+        # ---------- Create Income table ----------
+        income_layout = QVBoxLayout(self.income_tab)
+        self.income_table = QTableWidget(4, 12)
+
+        self.income_table.setHorizontalHeaderLabels(Constants.months)
+        self.income_table.setVerticalHeaderLabels(Constants.income_header)
+
+        # Make the table fill the available space
+        header = self.income_table.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+
+        income_layout.addWidget(self.income_table, 1)
+
+        # ---------- Income Bar Chart ----------
+        self.income_bar_set = QBarSet("Income")
+
+        # Empty values for the 12 months
+        self.income_bar_set.append([500] * 12)
+
+        self.income_bar_series = QBarSeries()
+        self.income_bar_series.append(self.income_bar_set)
+
+        self.income_chart = QChart()
+        self.income_chart.addSeries(self.income_bar_series)
+        self.income_chart.setTitle("Income by Month")
+
+        self.income_axis_x = QBarCategoryAxis()
+        self.income_axis_x.append(Constants.months)
+
+        self.income_axis_y = QValueAxis()
+        self.income_axis_y.setTitleText("Income")
+        self.income_axis_y.setRange(0, 10000)
+
+        self.income_chart.addAxis(self.income_axis_x, Qt.AlignBottom)
+        self.income_chart.addAxis(self.income_axis_y, Qt.AlignLeft)
+
+        self.income_bar_series.attachAxis(self.income_axis_x)
+        self.income_bar_series.attachAxis(self.income_axis_y)
+
+        self.income_chart_view = QChartView(self.income_chart)
+        self.income_chart_view.setRenderHint(QPainter.Antialiasing)
+
+        income_layout.addWidget(self.income_chart_view, 4)
 
 if __name__=="__main__":
     app = QApplication(sys.argv)

@@ -10,3 +10,19 @@ categories = [
     "Rent", "Investments", "Utilities", "Health Insurance", "Groceries", "Out Food", "Vices", "Car",
     "Car Insurance", "Theraphy", "Travel", "House", "Clothes", "Health", "Entertainment", "Other"
 ]
+
+income_header = [
+    "Salary", "Investments", "Others", "Total"
+]
+
+fix_spendings = [
+    "Rent", "Investments", "Health Insurance", "Car Insurance", "Electricity", "Internet", "Phone", "Water", "Gas", "Subscriptions"
+]
+
+utilities = [
+    "Electricity", "Internet", "Phone", "Water", "Gas"
+]
+
+subscriptions = [
+    "Youtube", "Audible"
+]

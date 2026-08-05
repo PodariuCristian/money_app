@@ -44,8 +44,8 @@ class MainWindow(QMainWindow):
 
         # -------------------- Create other tabs --------------------
         self.build_income_tab()
+        self.build_fix_costs_tab()
 
-        self.tabs.addTab(QWidget(), "Fix Spendings")
         self.tabs.addTab(QWidget(), "Spendings")
         self.tabs.addTab(QWidget(), "Statistics")
 
@@ -188,6 +188,49 @@ class MainWindow(QMainWindow):
         self.income_chart_view.setRenderHint(QPainter.Antialiasing)
 
         income_layout.addWidget(self.income_chart_view, 4)
+
+    def build_fix_costs_tab(self):
+        # ---------- Create Fix Costs tab ----------
+        self.fix_costs_tab = QWidget()
+        self.tabs.addTab(self.fix_costs_tab, "Fix Spendings")
+    
+        # ---------- Create Fix Costs table ----------
+        fix_costs_layout = QVBoxLayout(self.fix_costs_tab)
+        self.fix_costs_tab = QTableWidget(10, 12)
+    
+        self.fix_costs_tab.setHorizontalHeaderLabels(Constants.months)
+        self.fix_costs_tab.setVerticalHeaderLabels(Constants.fix_spendings)
+    
+        # Make the table fill the available space
+        header = self.fix_costs_tab.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+    
+        fix_costs_layout.addWidget(self.fix_costs_tab, 4)
+
+        # ---------- Create Utilities table ----------
+        self.fix_costs_tab = QTableWidget(5, 12)
+            
+        self.fix_costs_tab.setHorizontalHeaderLabels(Constants.months)
+        self.fix_costs_tab.setVerticalHeaderLabels(Constants.utilities)
+            
+        # Make the table fill the available space
+        header = self.fix_costs_tab.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+            
+        fix_costs_layout.addWidget(self.fix_costs_tab, 3)
+
+        # ---------- Create Subscriptions table ----------
+        self.fix_costs_tab = QTableWidget(2, 12)
+            
+        self.fix_costs_tab.setHorizontalHeaderLabels(Constants.months)
+        self.fix_costs_tab.setVerticalHeaderLabels(Constants.subscriptions)
+            
+        # Make the table fill the available space
+        header = self.fix_costs_tab.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+            
+        fix_costs_layout.addWidget(self.fix_costs_tab, 2)
+
 
 if __name__=="__main__":
     app = QApplication(sys.argv)

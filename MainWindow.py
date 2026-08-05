@@ -45,8 +45,8 @@ class MainWindow(QMainWindow):
         # -------------------- Create other tabs --------------------
         self.build_income_tab()
         self.build_fix_costs_tab()
+        self.build_spendings_tab()
 
-        self.tabs.addTab(QWidget(), "Spendings")
         self.tabs.addTab(QWidget(), "Statistics")
 
     # -------------------- Define Tab in Main Window --------------------
@@ -230,6 +230,56 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(QHeaderView.Stretch)
             
         fix_costs_layout.addWidget(self.fix_costs_tab, 2)
+
+    def build_spendings_tab(self):
+        # ---------- Create Fix Costs tab ----------
+        self.spendings_tab = QWidget()
+        self.tabs.addTab(self.spendings_tab, "Fix Spendings")
+        
+        # ---------- Create Spendings table ----------
+        spendings_layout = QVBoxLayout(self.spendings_tab)
+        self.spendings_tab = QTableWidget(16, 12)
+        
+        self.spendings_tab.setHorizontalHeaderLabels(Constants.months)
+        self.spendings_tab.setVerticalHeaderLabels(Constants.categories)
+        
+        # Make the table fill the available space
+        header = self.spendings_tab.horizontalHeader()
+        header.setSectionResizeMode(QHeaderView.Stretch)
+        
+        spendings_layout.addWidget(self.spendings_tab, 3)
+
+        # ---------- Spendings Bar Chart ----------
+        self.spendings_bar_set = QBarSet("Income")
+
+        # Empty values for the 12 months
+        self.spendings_bar_set.append([7500] * 16)
+
+        self.spendings_bar_series = QBarSeries()
+        self.spendings_bar_series.append(self.spendings_bar_set)
+
+        self.spendings_chart = QChart()
+        self.spendings_chart.addSeries(self.spendings_bar_series)
+        self.spendings_chart.setTitle("Spendings by Categorie")
+
+        self.income_axis_x = QBarCategoryAxis()
+        self.income_axis_x.append(Constants.categories)
+
+        self.income_axis_y = QValueAxis()
+        self.income_axis_y.setTitleText("Income")
+        self.income_axis_y.setRange(0, 10000)
+
+        self.spendings_chart.addAxis(self.income_axis_x, Qt.AlignBottom)
+        self.spendings_chart.addAxis(self.income_axis_y, Qt.AlignLeft)
+
+        self.spendings_bar_series.attachAxis(self.income_axis_x)
+        self.spendings_bar_series.attachAxis(self.income_axis_y)
+
+        self.spendings_chart_view = QChartView(self.spendings_chart)
+        self.spendings_chart_view.setRenderHint(QPainter.Antialiasing)
+
+        spendings_layout.addWidget(self.spendings_chart_view, 2)
+    
 
 
 if __name__=="__main__":

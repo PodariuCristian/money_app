@@ -4,16 +4,12 @@ from datetime import datetime
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtCharts import (
-    QChart, QChartView, QPieSeries,
-    QBarSeries, QBarSet, QBarCategoryAxis,
-    QValueAxis
+    QChart, QChartView, QPieSeries, QBarSeries, QBarSet, QBarCategoryAxis, QValueAxis
 )
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget,
-    QVBoxLayout, QHBoxLayout, QTabWidget,
-    QComboBox, QGroupBox, QLabel,
-    QLineEdit, QTableWidget, QTableWidgetItem,
-    QHeaderView
+    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget,
+    QComboBox, QGroupBox, QLabel, QLineEdit, QTableWidget, QTableWidgetItem,
+    QHeaderView, QAbstractItemView, QPushButton
 )
 from database.schema import create_tables
 from database.seed import seed_categories
@@ -212,12 +208,20 @@ class MainWindow(QMainWindow):
 
         layout = QVBoxLayout(self.fix_costs_page)
 
+        # ---------- Create Edit table button ----------
+        self.edit_button = QPushButton("Enable Editing")
+        self.edit_button.setCheckable(True)
+        self.edit_button.clicked.connect(self.toggle_fix_tables)
+
+        layout.addWidget(self.edit_button)
+
         # ---------- Create Fix Costs table ----------
         self.fixed_table = QTableWidget(5, 12)
         self.fixed_table.setHorizontalHeaderLabels(Constants.months)
         self.fixed_table.setVerticalHeaderLabels(Constants.fix_spendings)
         self.fixed_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.fixed_table, 3)
+        self.fixed_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.fixed_table.cellChanged.connect(lambda row, col: self.save_table(self.fixed_table, "Fixed", row, col))
 
         # ---------- Create Utilities table ----------
@@ -226,6 +230,7 @@ class MainWindow(QMainWindow):
         self.utilities_table.setVerticalHeaderLabels(Constants.utilities)
         self.utilities_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.utilities_table, 3)
+        self.utilities_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.utilities_table.cellChanged.connect(lambda row, col: self.save_table(self.utilities_table, "Utility", row, col))
 
         # ---------- Create Subscriptions table ----------
@@ -234,6 +239,7 @@ class MainWindow(QMainWindow):
         self.subscriptions_table.setVerticalHeaderLabels(Constants.subscriptions)
         self.subscriptions_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         layout.addWidget(self.subscriptions_table, 2)
+        self.subscriptions_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.subscriptions_table.cellChanged.connect(lambda row, col: self.save_table(self.subscriptions_table, "Subscription", row, col))
 
     def build_spendings_tab(self):
@@ -285,6 +291,27 @@ class MainWindow(QMainWindow):
         self.spendings_chart_view.setRenderHint(QPainter.Antialiasing)
 
         spendings_layout.addWidget(self.spendings_chart_view, 2)
+
+    def toggle_fix_tables(self):
+        editable = self.edit_button.isChecked()
+        tables = [
+            self.fixed_table,
+            self.utilities_table,
+            self.subscriptions_table
+        ]
+        if editable:
+            self.edit_button.setText("Disable Editing")
+            trigger = (
+                QAbstractItemView.DoubleClicked |
+                QAbstractItemView.EditKeyPressed |
+                QAbstractItemView.AnyKeyPressed
+            )
+        else:
+            self.edit_button.setText("Enable Editing")
+            trigger = QAbstractItemView.NoEditTriggers
+
+        for table in tables:
+            table.setEditTriggers(trigger)
 
     def load_table(self, table_widget, section, total_row=None):
         """

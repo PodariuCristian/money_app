@@ -1,8 +1,7 @@
 months = [
-            "January", "February", "March", "April",
-            "May", "June", "July", "August",
-            "September", "October", "November", "December"
-        ]
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+]
 
 years = ["2024", "2025", "2026", "2027", "2028", "2029", "2030"]
 
@@ -16,7 +15,7 @@ income_header = [
 ]
 
 fix_spendings = [
-    "Rent", "Investments", "Health Insurance", "Car Insurance", "Electricity", "Internet", "Phone", "Water", "Gas", "Subscriptions"
+    "Rent", "Investments", "Health Insurance", "Car Insurance", "Utilities"
 ]
 
 utilities = [

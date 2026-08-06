@@ -6,9 +6,10 @@ def create_tables():
     db.execute("""
     CREATE TABLE IF NOT EXISTS categories(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT UNIQUE NOT NULL,
-        type TEXT NOT NULL
-    )
+        section TEXT NOT NULL,
+        name TEXT NOT NULL,
+        UNIQUE(section, name)
+        )
     """)
 
     # Monthly values (Income, Expenses, Fixed Costs, etc.)

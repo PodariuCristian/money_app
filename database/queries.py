@@ -6,25 +6,27 @@ from database.database import db
 def get_categories(category_type=None):
     if category_type is None:
         return db.fetchall("""
-            SELECT *
-            FROM categories
-            ORDER BY name
+            SELECT * FROM categories ORDER BY name
         """)
+    
     return db.fetchall("""
-        SELECT *
-        FROM categories
-        WHERE type=?
-        ORDER BY name
-    """, (category_type,))
+        SELECT * FROM categories WHERE type=? ORDER BY name
+    """, (category_type,)
+    )
 
-def get_category_id(name):
-    row = db.fetchone("""
+def get_category_id(section, name):
+    row = db.fetchone(
+        """
         SELECT id
         FROM categories
-        WHERE name=?
-    """, (name,))
+        WHERE section = ?
+          AND name = ?
+        """, (section, name)
+    )
+
     if row:
         return row["id"]
+
     return None
 
 ###########################################################
@@ -33,17 +35,11 @@ def get_category_id(name):
 def add_transaction(category, amount, date, notes=""):
     category_id = get_category_id(category)
     db.execute("""
-        INSERT INTO transactions
-        (category_id,amount,date,notes)
-        VALUES(?,?,?,?)
-    """,
-    (category_id, amount, date, notes))
+        INSERT INTO transactions (category_id,amount,date,notes) VALUES(?,?,?,?)
+    """, (category_id, amount, date, notes)
+    )
 
-def update_transaction(transaction_id,
-                       category,
-                       amount,
-                       date,
-                       notes=""):
+def update_transaction(transaction_id, category, amount, date, notes=""):
     category_id = get_category_id(category)
     db.execute("""
         UPDATE transactions
@@ -53,20 +49,15 @@ def update_transaction(transaction_id,
             date=?,
             notes=?
         WHERE id=?
-    """,
-    (category_id,
-     amount,
-     date,
-     notes,
-     transaction_id))
+    """, (category_id, amount, date, notes, transaction_id)
+    )
 
 
 def delete_transaction(transaction_id):
     db.execute("""
-        DELETE FROM transactions
-        WHERE id=?
-    """,
-    (transaction_id,))
+        DELETE FROM transactions WHERE id=?
+    """, (transaction_id,)
+    )
 
 ###########################################################
 # MONTHLY TOTALS
@@ -82,8 +73,8 @@ def monthly_income(year, month):
             c.type='Income'
         AND strftime('%Y',date)=?
         AND strftime('%m',date)=?
-    """,
-    (str(year), f"{month:02d}"))
+    """, (str(year), f"{month:02d}")
+    )
     return row["total"]
 
 def monthly_expenses(year, month):
@@ -97,8 +88,8 @@ def monthly_expenses(year, month):
             c.type!='Income'
         AND strftime('%Y',date)=?
         AND strftime('%m',date)=?
-    """,
-    (str(year), f"{month:02d}"))
+    """, (str(year), f"{month:02d}")
+    )
     return row["total"]
 
 ###########################################################
@@ -114,8 +105,8 @@ def yearly_income(year):
         WHERE
             c.type='Income'
         AND strftime('%Y',date)=?
-    """,
-    (str(year),))
+    """, (str(year),)
+    )
     return row["total"]
 
 def yearly_expenses(year):
@@ -128,8 +119,8 @@ def yearly_expenses(year):
         WHERE
             c.type!='Income'
         AND strftime('%Y',date)=?
-    """,
-    (str(year),))
+    """, (str(year),)
+    )
     return row["total"]
 
 
@@ -150,9 +141,8 @@ def expenses_by_category(year, month):
         AND strftime('%m',date)=?
         GROUP BY c.name
         ORDER BY amount DESC
-    """,
-    (str(year),
-     f"{month:02d}"))
+    """, (str(year), f"{month:02d}")
+    )
 
 
 def income_per_month(year):
@@ -167,8 +157,8 @@ def income_per_month(year):
             c.type='Income'
         AND strftime('%Y',date)=?
         GROUP BY month
-    """,
-    (str(year),))
+    """,(str(year),)
+    )
 
 def expenses_per_month(year):
     return db.fetchall("""
@@ -182,8 +172,8 @@ def expenses_per_month(year):
             c.type!='Income'
         AND strftime('%Y',date)=?
         GROUP BY month
-    """,
-    (str(year),))
+    """, (str(year),)
+    )
 
 ###########################################################
 # TABLE DATA
@@ -204,45 +194,30 @@ def transactions_for_month(year, month):
             strftime('%Y',date)=?
         AND strftime('%m',date)=?
         ORDER BY date
-    """,
-    (str(year),
-     f"{month:02d}"))
+    """, (str(year), f"{month:02d}")
+     )
 
 
 ###########################################################
 # SAVE MONTLY VALUES
 ###########################################################
-def save_monthly_value(category, year, month, amount):
-    """
-    Inserts or updates a monthly value for a category.
-    """
-    category_id = get_category_id(category)
+def save_monthly_value(section, category, year, month, amount):
+    category_id = get_category_id(section, category)
     if category_id is None:
-        raise ValueError(f"Unknown category: {category}")
-    db.execute(
-        """
-        INSERT INTO monthly_values
-            (category_id, year, month, amount)
-        VALUES
-            (?, ?, ?, ?)
+        raise ValueError(f"{section}/{category} not found.")
+
+    db.execute("""
+        INSERT INTO monthly_values (category_id, year, month, amount) VALUES (?, ?, ?, ?)
         ON CONFLICT(category_id, year, month)
-        DO UPDATE SET
-            amount = excluded.amount
-        """,
-        (
-            category_id,
-            year,
-            month,
-            amount
-        )
+        DO UPDATE SET amount = excluded.amount
+        """,(category_id, year, month, amount)
     )
 
 def get_yearly_values(year, category_type="Income"):
     """
     Returns all monthly values for a given category type.
     """
-    return db.fetchall(
-        """
+    return db.fetchall("""
         SELECT
             c.name,
             mv.month,
@@ -253,36 +228,22 @@ def get_yearly_values(year, category_type="Income"):
         WHERE mv.year = ?
           AND c.type = ?
         ORDER BY c.name, mv.month
-        """,
-        (
-            year,
-            category_type
-        )
+        """, (year, category_type)
     )
 
-def load_monthly_values(year, category_type):
-    """
-    Returns all monthly values for a given category type.
-    Example output:
-    {
-        "Salary": {1: 3500, 2: 3600},
-        "Investments": {1: 100},
-        "Others": {}
-    }
-    """
-    rows = db.fetchall(
-        """
+def load_monthly_values(year, section):
+    rows = db.fetchall("""
         SELECT
             c.name,
             mv.month,
             mv.amount
         FROM monthly_values mv
         JOIN categories c
-            ON mv.category_id = c.id
-        WHERE mv.year = ?
-          AND c.type = ?
-        """,
-        (year, category_type)
+        ON mv.category_id = c.id
+        WHERE
+            mv.year = ?
+        AND c.section = ?
+        """,(year, section)
     )
 
     data = {}

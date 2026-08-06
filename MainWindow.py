@@ -15,14 +15,22 @@ from PySide6.QtWidgets import (
     QLineEdit, QTableWidget, QTableWidgetItem,
     QHeaderView
 )
+from database.schema import create_tables
+from database.seed import seed_categories
+from database import queries
+
+from PySide6.QtWidgets import QTableWidgetItem
 
 class MainWindow(QMainWindow):
     CURRENT_YEAR = datetime.now().year
 
     def __init__(self):
         super().__init__()
+        create_tables()
+        seed_categories()
         self.setWindowTitle("MoneyApp")
         self.resize(1800, 950)
+
         self._setup_ui()
 
     def _setup_ui(self):
@@ -44,8 +52,15 @@ class MainWindow(QMainWindow):
 
         # -------------------- Create other tabs --------------------
         self.build_income_tab()
+        self.load_table(self.income_table, "Income", total_row=3)
+
         self.build_fix_costs_tab()
+        self.load_table(self.fixed_table, "Fixed")
+        self.load_table(self.utilities_table, "Utility")
+        self.load_table(self.subscriptions_table, "Subscription")
+
         self.build_spendings_tab()
+        self.load_table(self.spendings_table, "Expense")
 
         self.tabs.addTab(QWidget(), "Statistics")
 
@@ -157,6 +172,7 @@ class MainWindow(QMainWindow):
         header.setSectionResizeMode(QHeaderView.Stretch)
 
         income_layout.addWidget(self.income_table, 1)
+        self.income_table.cellChanged.connect(lambda row, col: self.save_table(self.income_table, "Income", row, col, total_row=3))
 
         # ---------- Income Bar Chart ----------
         self.income_bar_set = QBarSet("Income")
@@ -191,63 +207,53 @@ class MainWindow(QMainWindow):
 
     def build_fix_costs_tab(self):
         # ---------- Create Fix Costs tab ----------
-        self.fix_costs_tab = QWidget()
-        self.tabs.addTab(self.fix_costs_tab, "Fix Spendings")
-    
+        self.fix_costs_page = QWidget()
+        self.tabs.addTab(self.fix_costs_page, "Fix Spendings")
+
+        layout = QVBoxLayout(self.fix_costs_page)
+
         # ---------- Create Fix Costs table ----------
-        fix_costs_layout = QVBoxLayout(self.fix_costs_tab)
-        self.fix_costs_tab = QTableWidget(10, 12)
-    
-        self.fix_costs_tab.setHorizontalHeaderLabels(Constants.months)
-        self.fix_costs_tab.setVerticalHeaderLabels(Constants.fix_spendings)
-    
-        # Make the table fill the available space
-        header = self.fix_costs_tab.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-    
-        fix_costs_layout.addWidget(self.fix_costs_tab, 4)
+        self.fixed_table = QTableWidget(5, 12)
+        self.fixed_table.setHorizontalHeaderLabels(Constants.months)
+        self.fixed_table.setVerticalHeaderLabels(Constants.fix_spendings)
+        self.fixed_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.fixed_table, 3)
+        self.fixed_table.cellChanged.connect(lambda row, col: self.save_table(self.fixed_table, "Fixed", row, col))
 
         # ---------- Create Utilities table ----------
-        self.fix_costs_tab = QTableWidget(5, 12)
-            
-        self.fix_costs_tab.setHorizontalHeaderLabels(Constants.months)
-        self.fix_costs_tab.setVerticalHeaderLabels(Constants.utilities)
-            
-        # Make the table fill the available space
-        header = self.fix_costs_tab.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-            
-        fix_costs_layout.addWidget(self.fix_costs_tab, 3)
+        self.utilities_table = QTableWidget(5, 12)
+        self.utilities_table.setHorizontalHeaderLabels(Constants.months)
+        self.utilities_table.setVerticalHeaderLabels(Constants.utilities)
+        self.utilities_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.utilities_table, 3)
+        self.utilities_table.cellChanged.connect(lambda row, col: self.save_table(self.utilities_table, "Utility", row, col))
 
         # ---------- Create Subscriptions table ----------
-        self.fix_costs_tab = QTableWidget(2, 12)
-            
-        self.fix_costs_tab.setHorizontalHeaderLabels(Constants.months)
-        self.fix_costs_tab.setVerticalHeaderLabels(Constants.subscriptions)
-            
-        # Make the table fill the available space
-        header = self.fix_costs_tab.horizontalHeader()
-        header.setSectionResizeMode(QHeaderView.Stretch)
-            
-        fix_costs_layout.addWidget(self.fix_costs_tab, 2)
+        self.subscriptions_table = QTableWidget(2, 12)
+        self.subscriptions_table.setHorizontalHeaderLabels(Constants.months)
+        self.subscriptions_table.setVerticalHeaderLabels(Constants.subscriptions)
+        self.subscriptions_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        layout.addWidget(self.subscriptions_table, 2)
+        self.subscriptions_table.cellChanged.connect(lambda row, col: self.save_table(self.subscriptions_table, "Subscription", row, col))
 
     def build_spendings_tab(self):
         # ---------- Create Fix Costs tab ----------
         self.spendings_tab = QWidget()
-        self.tabs.addTab(self.spendings_tab, "Fix Spendings")
+        self.tabs.addTab(self.spendings_tab, "Spendings")
         
         # ---------- Create Spendings table ----------
         spendings_layout = QVBoxLayout(self.spendings_tab)
-        self.spendings_tab = QTableWidget(16, 12)
+        self.spendings_table = QTableWidget(16, 12)
         
-        self.spendings_tab.setHorizontalHeaderLabels(Constants.months)
-        self.spendings_tab.setVerticalHeaderLabels(Constants.categories)
+        self.spendings_table.setHorizontalHeaderLabels(Constants.months)
+        self.spendings_table.setVerticalHeaderLabels(Constants.categories)
         
         # Make the table fill the available space
-        header = self.spendings_tab.horizontalHeader()
+        header = self.spendings_table.horizontalHeader()
         header.setSectionResizeMode(QHeaderView.Stretch)
         
-        spendings_layout.addWidget(self.spendings_tab, 3)
+        spendings_layout.addWidget(self.spendings_table, 3)
+        self.spendings_table.cellChanged.connect(lambda row, col: self.save_table(self.spendings_table, "Expense", row, col))
 
         # ---------- Spendings Bar Chart ----------
         self.spendings_bar_set = QBarSet("Income")
@@ -279,8 +285,130 @@ class MainWindow(QMainWindow):
         self.spendings_chart_view.setRenderHint(QPainter.Antialiasing)
 
         spendings_layout.addWidget(self.spendings_chart_view, 2)
-    
 
+    def load_table(self, table_widget, section, total_row=None):
+        """
+        Loads data from the database into any monthly table.
+        Parameters
+        ----------
+        table_widget : QTableWidget
+            The table to populate.
+        category_type : str
+            "Income", "Expense", "Fixed", "Utility", "Subscription"
+        total_row : int | None
+            Row index that should display totals.
+            Pass None if the table has no total row.
+        """
+        year = int(self.comboBox.currentText())
+        data = queries.load_monthly_values(year,  section)
+        table_widget.blockSignals(True)
+        table_widget.clearContents()
+        rows = table_widget.rowCount()
+        cols = table_widget.columnCount()
+        # Populate the table
+        for row in range(rows):
+            # Skip the total row
+            if total_row is not None and row == total_row:
+                continue
+            category = table_widget.verticalHeaderItem(row).text()
+            if category not in data:
+                continue
+            for month, amount in data[category].items():
+                table_widget.setItem(
+                    row, month - 1, QTableWidgetItem(f"{amount:.2f}")
+                )
+
+        # Calculate totals if requested
+        if total_row is not None:
+            for col in range(cols):
+                total = 0.0
+                for row in range(rows):
+                    if row == total_row:
+                        continue
+                    item = table_widget.item(row, col)
+                    if item is None:
+                        continue
+                    try:
+                        total += float(item.text())
+                    except ValueError:
+                        pass
+                table_widget.setItem(
+                    total_row, col, QTableWidgetItem(f"{total:.2f}")
+                )
+        table_widget.blockSignals(False)
+
+    def save_table(self, table_widget, section, row, column, total_row=None):
+        
+        """
+        Saves an edited cell to the database and updates the total row.
+        Parameters
+        ----------
+        table_widget : QTableWidget
+        row : int
+        column : int
+        total_row : int | None
+            Row containing totals. Pass None if the table has no total row.
+        """
+        # Ignore edits to the total row
+        if total_row is not None and row == total_row:
+            return
+        item = table_widget.item(row, column)
+        if item is None:
+            return
+        text = item.text().strip()
+        # Empty cell = zero
+        if text == "":
+            amount = 0.0
+        else:
+            try:
+                amount = float(text)
+            except ValueError:
+                # Invalid input: restore to zero
+                table_widget.blockSignals(True)
+                item.setText("0.00")
+                table_widget.blockSignals(False)
+                return
+
+        # Category name comes from the row header
+        category = table_widget.verticalHeaderItem(row).text()
+
+        # Current year
+        year = int(self.comboBox.currentText())
+
+        # January = column 0
+        month = column + 1
+        # Save to SQLite
+        queries.save_monthly_value(
+            section=section,
+            category=category,
+            year=year,
+            month=month,
+            amount=amount
+        )
+
+        # Update total row if the table has one
+        if total_row is not None:
+            total = 0.0
+            for r in range(table_widget.rowCount()):
+                if r == total_row:
+                    continue
+                cell = table_widget.item(r, column)
+                if cell is None:
+                    continue
+                try:
+                    total += float(cell.text())
+                except ValueError:
+                    pass
+            table_widget.blockSignals(True)
+            table_widget.setItem(
+                total_row,
+                column,
+                QTableWidgetItem(f"{total:.2f}")
+            )
+            table_widget.blockSignals(False)
+        # Optional: refresh charts
+        if hasattr(self, "update_charts"):
+            self.update_charts()
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
